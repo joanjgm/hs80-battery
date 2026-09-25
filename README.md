@@ -15,6 +15,16 @@ which ships with Windows).
 - A one-off notification when the battery drops to 15%.
 - *Start with Windows* in the menu (an `HKCU\…\Run` entry pointing at wherever the exe lives).
 
+## Download
+
+Grab `HS80Battery.exe` (or the `.zip`) from the
+[latest release](https://github.com/joanjgm/hs80-battery/releases/latest) and run it: there is
+nothing to install. Put it wherever you like first if you plan to tick *Start with Windows*,
+since that entry points at the exe's current location.
+
+The exe isn't code-signed, so SmartScreen may warn the first time: *More info → Run anyway*.
+If you'd rather not trust a binary, build it yourself (below); it takes a second.
+
 ## Build
 
 ```powershell
