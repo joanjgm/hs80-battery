@@ -1,0 +1,39 @@
+{
+  "UUID": "com.joanjgm.hs80battery",
+  "Name": "HS80 Battery",
+  "Author": "Joan Guerra Makaren",
+  "Description": "Corsair HS80 RGB Wireless battery level on a key, read straight from the USB receiver (no iCUE). Also shows it in the taskbar.",
+  "Version": "1.1.0.0",
+  "URL": "https://github.com/joanjgm/hs80-battery",
+  "Icon": "imgs/plugin",
+  "Category": "HS80 Battery",
+  "CategoryIcon": "imgs/category",
+  "CodePath": "HS80Battery.exe",
+  "CodePathWin": "HS80Battery.exe",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.4"
+  },
+  "OS": [
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Actions": [
+    {
+      "UUID": "com.joanjgm.hs80battery.level",
+      "Name": "Battery level",
+      "Tooltip": "Shows the HS80 battery percentage. Press to refresh.",
+      "Icon": "imgs/action",
+      "Controllers": ["Keypad"],
+      "SupportedInMultiActions": false,
+      "UserTitleEnabled": false,
+      "States": [
+        {
+          "Image": "imgs/key"
+        }
+      ]
+    }
+  ]
+}

@@ -1,8 +1,9 @@
 # HS80 Battery
 
 A tiny Windows tray app that shows the battery level of a **Corsair HS80 RGB Wireless** headset
-in the taskbar, without iCUE. One ~28 KB exe with no dependencies (it targets .NET Framework 4.8,
-which ships with Windows).
+in the taskbar, without iCUE. The same exe doubles as a **Stream Deck plugin** that puts it on a
+key. One ~35 KB exe with no dependencies (it targets .NET Framework 4.8, which ships with
+Windows).
 
 ![Tray icon states](docs/icons.png)
 
@@ -25,13 +26,39 @@ since that entry points at the exe's current location.
 The exe isn't code-signed, so SmartScreen may warn the first time: *More info → Run anyway*.
 If you'd rather not trust a binary, build it yourself (below); it takes a second.
 
+## Stream Deck
+
+![Stream Deck key states](docs/keys.png)
+
+Double-click `HS80Battery-v….streamDeckPlugin` from the release and Stream Deck installs it.
+Then drag **HS80 Battery → Battery level** onto a key. The key shows the same icon and colours
+as the tray (always the white variant, since keys are black), refreshes every 10 s, and reads
+immediately when pressed.
+
+The plugin is the same `HS80Battery.exe`, so it also shows the tray icon and you don't need the
+standalone app (or *Start with Windows*: Stream Deck starts with Windows and launches it). Only
+one copy ever talks to the receiver, because two processes on the same HID collection would
+each receive the other's replies and couldn't tell them apart:
+
+- A copy you start by hand while another is running just exits.
+- A copy Stream Deck starts asks a running standalone copy to quit and takes over.
+- When Stream Deck quits, the plugin quits with it, tray icon included.
+
+Windows remembers tray icon visibility per exe path, so the plugin's tray icon starts out hidden
+in the `^` overflow even if the standalone one was pinned.
+
 ## Build
 
 ```powershell
-.\build.ps1          # dist\HS80Battery.exe
-.\build.ps1 -Probe   # also dist\probe.exe (HID diagnostics)
-.\tools\preview.ps1  # dist\preview.png with every icon state, plus assets\hs80.ico
+.\build.ps1           # dist\HS80Battery.exe, the .sdPlugin folder and the .streamDeckPlugin installer
+.\build.ps1 -Release  # also dist\release\ with the exe, zip and installer, plus their SHA-256
+.\build.ps1 -Probe    # also dist\probe.exe (HID diagnostics)
+.\tools\preview.ps1   # icon previews (dist\preview.png, dist\keys.png), assets\hs80.ico, streamdeck\imgs
 ```
+
+The plugin manifest and images live in `streamdeck\`; the installer is just a zip of the
+`com.joanjgm.hs80battery.sdPlugin` folder, the same as Elgato's `streamdeck pack` produces (and
+it passes `streamdeck validate`).
 
 Windows 11 puts new tray icons in the `^` overflow: drag it onto the taskbar, or turn it on in
 *Settings → Personalization → Taskbar → Other system tray icons*.

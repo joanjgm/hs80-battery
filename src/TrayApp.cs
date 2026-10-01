@@ -6,6 +6,8 @@ using Microsoft.Win32;
 
 namespace Hs80Battery
 {
+    // The tray icon, plus the Stream Deck keys when Stream Deck launched us as its plugin.
+    // Either way this is the only process reading the receiver (see Program).
     sealed class TrayApp : ApplicationContext
     {
         const int PollMs = 10 * 1000;
@@ -18,14 +20,18 @@ namespace Hs80Battery
         readonly ToolStripMenuItem startupItem = new ToolStripMenuItem("Start with Windows");
         readonly System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         readonly SynchronizationContext ui;
+        readonly StreamDeckPlugin plugin;
+        readonly RegisteredWaitHandle quitWait;
 
         Reading last = new Reading { State = HeadsetState.NoReceiver };
-        bool warnedLow;
+        bool warnedLow, exited;
         int polling;
 
-        public TrayApp()
+        // `plugin` is null when started by hand; `quit` is signalled when another instance takes over.
+        public TrayApp(StreamDeckPlugin plugin, WaitHandle quit)
         {
             ui = SynchronizationContext.Current ?? new WindowsFormsSynchronizationContext();
+            this.plugin = plugin;
 
             statusItem.Enabled = false;
             startupItem.Checked = StartsWithWindows();
@@ -35,7 +41,9 @@ namespace Hs80Battery
             menu.Items.Add(statusItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Refresh now", null, (s, e) => Poll());
-            menu.Items.Add(startupItem);
+            // Stream Deck already starts with Windows and launches us; an autostart entry would
+            // only start a second copy that hands straight back to this one.
+            if (plugin == null) menu.Items.Add(startupItem);
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Exit", null, (s, e) => ExitThread());
 
@@ -54,6 +62,17 @@ namespace Hs80Battery
             SystemEvents.UserPreferenceChanged += OnPreferenceChanged;
             SystemEvents.PowerModeChanged += OnPowerModeChanged;
             SystemEvents.DisplaySettingsChanged += OnDisplayChanged;
+
+            quitWait = ThreadPool.RegisterWaitForSingleObject(quit,
+                (s, timedOut) => ui.Post(_ => ExitThread(), null), null, Timeout.Infinite, true);
+
+            if (plugin != null)
+            {
+                plugin.RefreshRequested += () => ui.Post(_ => Poll(), null);
+                // Stream Deck closed the socket (quit, plugin disabled or updated): go with it.
+                plugin.Closed += () => ui.Post(_ => ExitThread(), null);
+                plugin.Start();
+            }
 
             Poll();
         }
@@ -85,6 +104,7 @@ namespace Hs80Battery
                 tray.Icon = BatteryIcon.ToIcon(bmp);
             if (old != null) old.Dispose();
 
+            if (plugin != null) plugin.SetImage(BatteryIcon.KeyImage(r));
             WarnIfLow(r);
         }
 
@@ -152,10 +172,15 @@ namespace Hs80Battery
 
         protected override void ExitThreadCore()
         {
+            // Exit, a takeover and Stream Deck closing can all arrive; tear down once.
+            if (exited) return;
+            exited = true;
             SystemEvents.UserPreferenceChanged -= OnPreferenceChanged;
             SystemEvents.PowerModeChanged -= OnPowerModeChanged;
             SystemEvents.DisplaySettingsChanged -= OnDisplayChanged;
+            quitWait.Unregister(null);
             timer.Stop();
+            if (plugin != null) plugin.Dispose();
             tray.Visible = false;
             tray.Dispose();
             headset.Dispose();

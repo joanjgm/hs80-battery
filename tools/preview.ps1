@@ -1,4 +1,5 @@
-# Renders dist\preview.png (every tray-icon state, dark and light taskbar) and assets\hs80.ico.
+# Renders dist\preview.png (every tray-icon state, dark and light taskbar), dist\keys.png (the same
+# states on Stream Deck keys), assets\hs80.ico and the plugin images in streamdeck\imgs.
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 $csc = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319\csc.exe'
@@ -12,4 +13,4 @@ $exe = Join-Path $dist 'preview.exe'
 if ($LASTEXITCODE -ne 0) { throw "preview build failed ($LASTEXITCODE)" }
 & $exe $root
 Remove-Item $exe
-Write-Output "wrote: $(Join-Path $dist 'preview.png'), $(Join-Path $root 'assets\hs80.ico')"
+Write-Output "wrote: dist\preview.png, dist\keys.png, assets\hs80.ico, streamdeck\imgs\*"

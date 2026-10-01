@@ -66,6 +66,53 @@ namespace Hs80Battery
 
             Directory.CreateDirectory(Path.Combine(root, "assets"));
             WriteIco(Path.Combine(root, "assets\\hs80.ico"), new[] { 16, 24, 32, 48, 256 });
+
+            WriteStreamDeckImages(Path.Combine(root, "streamdeck\\imgs"));
+            WriteKeyPreview(Path.Combine(root, "dist\\keys.png"));
+        }
+
+        // Images the plugin manifest points at. Action and category icons are white glyphs, as
+        // the Stream Deck guidelines ask; the key image is only shown until the first reading.
+        static void WriteStreamDeckImages(string dir)
+        {
+            Directory.CreateDirectory(dir);
+            Save(BatteryIcon.Glyph(Color.White, 20, 1), dir, "action.png");
+            Save(BatteryIcon.Glyph(Color.White, 40, 2), dir, "action@2x.png");
+            Save(BatteryIcon.Glyph(Color.White, 28, 1), dir, "category.png");
+            Save(BatteryIcon.Glyph(Color.White, 56, 3), dir, "category@2x.png");
+            Save(BatteryIcon.Glyph(Color.White, 72, 4), dir, "key.png");
+            Save(BatteryIcon.Glyph(Color.White, 144, 8), dir, "key@2x.png");
+            Save(AppIcon(256), dir, "plugin.png");
+            Save(AppIcon(512), dir, "plugin@2x.png");
+        }
+
+        // Every state as it lands on a (black, rounded) Stream Deck key.
+        static void WriteKeyPreview(string path)
+        {
+            const int key = 144, gap = 20;
+            using (var sheet = new Bitmap(gap + States.Length * (key + gap), key + 2 * gap))
+            using (var g = Graphics.FromImage(sheet))
+            {
+                g.Clear(Color.FromArgb(0x2B, 0x2B, 0x2B));
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                for (int i = 0; i < States.Length; i++)
+                {
+                    int x = gap + i * (key + gap);
+                    using (var face = Rounded(new RectangleF(x, gap, key, key), 18))
+                        g.FillPath(Brushes.Black, face);
+                    string uri = BatteryIcon.KeyImage(States[i]);
+                    var bytes = Convert.FromBase64String(uri.Substring(uri.IndexOf(',') + 1));
+                    using (var ms = new MemoryStream(bytes))
+                    using (var img = Image.FromStream(ms))
+                        g.DrawImageUnscaled(img, x, gap);
+                }
+                sheet.Save(path, ImageFormat.Png);
+            }
+        }
+
+        static void Save(Bitmap bmp, string dir, string name)
+        {
+            using (bmp) bmp.Save(Path.Combine(dir, name), ImageFormat.Png);
         }
 
         static Reading R(HeadsetState s, int p)

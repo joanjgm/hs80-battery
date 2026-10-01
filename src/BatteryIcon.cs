@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
 
@@ -62,10 +64,43 @@ namespace Hs80Battery
         // "100" only fits between the pads, with a pixel to spare on each side, using 3 px zeros.
         static readonly string[] NarrowZero = { ".#.", "#.#", "#.#", "#.#", "#.#", "#.#", ".#." };
 
+        // Tray icon: the art scaled by whole pixels to fill `size`.
         public static Bitmap Render(Reading r, int size, bool lightTaskbar)
         {
             string text;
             Color color;
+            Describe(r, lightTaskbar, out text, out color);
+            return Draw(Compose(text), color, size, Math.Max(1, size / 16));
+        }
+
+        // Stream Deck key (144 px, the @2x size): 8 px per art pixel leaves an 8 px margin so the
+        // key's rounded corners don't clip the art. Keys are black, so always the dark variant.
+        public static string KeyImage(Reading r)
+        {
+            string text;
+            Color color;
+            Describe(r, false, out text, out color);
+            using (var bmp = Draw(Compose(text), color, 144, 8))
+                return PngDataUri(bmp);
+        }
+
+        // Just the headset, no digits: action and category icons for the Stream Deck plugin.
+        public static Bitmap Glyph(Color color, int size, int scale)
+        {
+            return Draw(Compose(""), color, size, scale);
+        }
+
+        public static string PngDataUri(Bitmap bmp)
+        {
+            using (var ms = new MemoryStream())
+            {
+                bmp.Save(ms, ImageFormat.Png);
+                return "data:image/png;base64," + Convert.ToBase64String(ms.ToArray());
+            }
+        }
+
+        static void Describe(Reading r, bool lightTaskbar, out string text, out Color color)
+        {
             switch (r.State)
             {
                 case HeadsetState.NoReceiver:
@@ -81,7 +116,10 @@ namespace Hs80Battery
                     else color = lightTaskbar ? Color.Black : Color.White;
                     break;
             }
+        }
 
+        static bool[,] Compose(string text)
+        {
             var px = new bool[16, 16];
             for (int y = 0; y < 16; y++)
                 for (int x = 0; x < 16; x++)
@@ -100,8 +138,12 @@ namespace Hs80Battery
                         if (g[y][x] == '#') px[cx + x, TextTop + y] = true;
                 cx += g[0].Length + 1;
             }
+            return px;
+        }
 
-            int k = Math.Max(1, size / 16);
+        // `k` screen pixels per art pixel, centred in a `size` square.
+        static Bitmap Draw(bool[,] px, Color color, int size, int k)
+        {
             int off = (size - 16 * k) / 2;
             var bmp = new Bitmap(size, size);
             using (var gfx = Graphics.FromImage(bmp))
