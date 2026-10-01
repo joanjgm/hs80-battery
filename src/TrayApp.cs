@@ -44,8 +44,12 @@ namespace Hs80Battery
             // Stream Deck already starts with Windows and launches us; an autostart entry would
             // only start a second copy that hands straight back to this one.
             if (plugin == null) menu.Items.Add(startupItem);
-            menu.Items.Add(new ToolStripSeparator());
-            menu.Items.Add("Exit", null, (s, e) => ExitThread());
+            // Stream Deck relaunches a plugin that exits, even cleanly, so Exit would only restart it.
+            if (plugin == null)
+            {
+                menu.Items.Add(new ToolStripSeparator());
+                menu.Items.Add("Exit", null, (s, e) => ExitThread());
+            }
 
             tray.ContextMenuStrip = menu;
             tray.DoubleClick += (s, e) => Poll();

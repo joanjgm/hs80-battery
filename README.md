@@ -41,8 +41,11 @@ one copy ever talks to the receiver, because two processes on the same HID colle
 each receive the other's replies and couldn't tell them apart:
 
 - A copy you start by hand while another is running just exits.
-- A copy Stream Deck starts asks a running standalone copy to quit and takes over.
-- When Stream Deck quits, the plugin quits with it, tray icon included.
+- A copy Stream Deck starts asks a running standalone copy to quit and takes over. Version 1.0.0
+  doesn't know how to hand over, so close it (or replace it with this version) before installing
+  the plugin.
+- The plugin runs for as long as Stream Deck does: its tray menu has no *Exit*, because Stream
+  Deck relaunches a plugin that exits.
 
 Windows remembers tray icon visibility per exe path, so the plugin's tray icon starts out hidden
 in the `^` overflow even if the standalone one was pinned.
