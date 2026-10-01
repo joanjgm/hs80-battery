@@ -8,7 +8,7 @@ if (-not (Test-Path $dist)) { New-Item -ItemType Directory -Path $dist | Out-Nul
 $exe = Join-Path $dist 'preview.exe'
 
 & $csc /nologo /target:exe /codepage:65001 "/out:$exe" /reference:System.Drawing.dll `
-    (Join-Path $root 'src\BatteryIcon.cs') (Join-Path $root 'src\Headset.cs') `
+    (Join-Path $root 'src\BatteryIcon.cs') (Join-Path $root 'src\KeyIcon.cs') (Join-Path $root 'src\Headset.cs') `
     (Join-Path $root 'src\Hid.cs') (Join-Path $PSScriptRoot 'Preview.cs')
 if ($LASTEXITCODE -ne 0) { throw "preview build failed ($LASTEXITCODE)" }
 & $exe $root

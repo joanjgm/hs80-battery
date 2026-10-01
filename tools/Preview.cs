@@ -76,35 +76,47 @@ namespace Hs80Battery
         static void WriteStreamDeckImages(string dir)
         {
             Directory.CreateDirectory(dir);
+            // Pixel art where it's tiny enough to stay crisp, the smooth key drawing above that.
             Save(BatteryIcon.Glyph(Color.White, 20, 1), dir, "action.png");
-            Save(BatteryIcon.Glyph(Color.White, 40, 2), dir, "action@2x.png");
+            Save(KeyIcon.Glyph(Color.White, 40), dir, "action@2x.png");
             Save(BatteryIcon.Glyph(Color.White, 28, 1), dir, "category.png");
-            Save(BatteryIcon.Glyph(Color.White, 56, 3), dir, "category@2x.png");
-            Save(BatteryIcon.Glyph(Color.White, 72, 4), dir, "key.png");
-            Save(BatteryIcon.Glyph(Color.White, 144, 8), dir, "key@2x.png");
+            Save(KeyIcon.Glyph(Color.White, 56), dir, "category@2x.png");
+            Save(KeyIcon.Glyph(Color.White, 72), dir, "key.png");
+            Save(KeyIcon.Glyph(Color.White, 144), dir, "key@2x.png");
             Save(AppIcon(256), dir, "plugin.png");
             Save(AppIcon(512), dir, "plugin@2x.png");
         }
 
-        // Every state as it lands on a (black, rounded) Stream Deck key.
+        // Every state as it lands on a (black, rounded) Stream Deck key: the 144 px image the
+        // plugin sends, then the 72 px a standard Stream Deck key actually has.
         static void WriteKeyPreview(string path)
         {
-            const int key = 144, gap = 20;
-            using (var sheet = new Bitmap(gap + States.Length * (key + gap), key + 2 * gap))
+            const int key = 144, small = 72, gap = 20;
+            Reading[] states = new Reading[States.Length + 1];
+            States.CopyTo(states, 0);
+            states[States.Length] = R(HeadsetState.Full, 100);
+            using (var sheet = new Bitmap(gap + states.Length * (key + gap), key + small + 3 * gap))
             using (var g = Graphics.FromImage(sheet))
             {
                 g.Clear(Color.FromArgb(0x2B, 0x2B, 0x2B));
                 g.SmoothingMode = SmoothingMode.AntiAlias;
-                for (int i = 0; i < States.Length; i++)
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                for (int i = 0; i < states.Length; i++)
                 {
                     int x = gap + i * (key + gap);
                     using (var face = Rounded(new RectangleF(x, gap, key, key), 18))
                         g.FillPath(Brushes.Black, face);
-                    string uri = BatteryIcon.KeyImage(States[i]);
+                    string uri = BatteryIcon.KeyImage(states[i]);
                     var bytes = Convert.FromBase64String(uri.Substring(uri.IndexOf(',') + 1));
                     using (var ms = new MemoryStream(bytes))
                     using (var img = Image.FromStream(ms))
+                    {
                         g.DrawImageUnscaled(img, x, gap);
+                        int sx = x + (key - small) / 2, sy = key + 2 * gap;
+                        using (var face = Rounded(new RectangleF(sx, sy, small, small), 9))
+                            g.FillPath(Brushes.Black, face);
+                        g.DrawImage(img, sx, sy, small, small);
+                    }
                 }
                 sheet.Save(path, ImageFormat.Png);
             }

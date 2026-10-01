@@ -73,18 +73,14 @@ namespace Hs80Battery
             return Draw(Compose(text), color, size, Math.Max(1, size / 16));
         }
 
-        // Stream Deck key (144 px, the @2x size): 8 px per art pixel leaves an 8 px margin so the
-        // key's rounded corners don't clip the art. Keys are black, so always the dark variant.
+        // Stream Deck key at the @2x size. Keys are black, so always the dark variant.
         public static string KeyImage(Reading r)
         {
-            string text;
-            Color color;
-            Describe(r, false, out text, out color);
-            using (var bmp = Draw(Compose(text), color, 144, 8))
+            using (var bmp = KeyIcon.Render(r, 144))
                 return PngDataUri(bmp);
         }
 
-        // Just the headset, no digits: action and category icons for the Stream Deck plugin.
+        // Just the headset, no digits, as pixel art: the smallest plugin icons.
         public static Bitmap Glyph(Color color, int size, int scale)
         {
             return Draw(Compose(""), color, size, scale);
@@ -99,7 +95,7 @@ namespace Hs80Battery
             }
         }
 
-        static void Describe(Reading r, bool lightTaskbar, out string text, out Color color)
+        internal static void Describe(Reading r, bool lightTaskbar, out string text, out Color color)
         {
             switch (r.State)
             {
